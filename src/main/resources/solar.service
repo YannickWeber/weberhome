@@ -1,0 +1,14 @@
+[Unit]
+Description=Solar to InfluxDB Service
+After=syslog.target network.target
+
+[Service]
+SuccessExitStatus=143
+User=yannick
+Type=simple
+
+ExecStart=/bin/bash /home/yannick/Solar/weberhome-1.0-SNAPSHOT/bin/weberhome
+ExecStop=/bin/kill -15 $MAINPID
+
+[Install]
+WantedBy=multi-user.target
