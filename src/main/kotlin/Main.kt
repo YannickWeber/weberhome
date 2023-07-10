@@ -6,23 +6,34 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.internal.toLongOrDefault
 import org.pmw.tinylog.Logger
+import java.time.Duration
 import java.time.Instant
 import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
 
+private const val POLL_INTERVAL_MINUTES = 2L
+
+private const val BATTERY_CONF_URL = "http://varta-batterie/cgi/ems_conf.js"
+private const val BATTERY_DATA_URL = "http://varta-batterie/cgi/ems_data.js"
+
+private const val INFLUX_DB_URL = "http://raspberrypi:8086"
+private const val INFLUX_DB_TOKEN = "my-token"
+private const val INFLUX_DB_ORG = "my-org"
+private const val INFLUX_DB_BUCKET = "weber"
+
 fun main() {
-    val token = "my-token".toCharArray()
-    val org = "my-org"
-    val bucket = "weber"
-    val influxDBClient: InfluxDBClient = InfluxDBClientFactory.create("http://raspberrypi:8086", token, org, bucket)
+    val token = INFLUX_DB_TOKEN.toCharArray()
+    val org = INFLUX_DB_ORG
+    val bucket = INFLUX_DB_BUCKET
+    val influxDBClient: InfluxDBClient = InfluxDBClientFactory.create(INFLUX_DB_URL, token, org, bucket)
 
     val client = OkHttpClient()
     val rowNameRequest: Request = Request.Builder()
-        .url("http://varta-batterie/cgi/ems_conf.js")
+        .url(BATTERY_CONF_URL)
         .build()
 
     val dataRequest: Request = Request.Builder()
-        .url("http://varta-batterie/cgi/ems_data.js")
+        .url(BATTERY_DATA_URL)
         .build()
 
     val rowNamesString = client.newCall(rowNameRequest).execute().body!!.string()
@@ -45,7 +56,7 @@ fun main() {
             split[0].replace("_Conf", "") to names
         }
 
-    Timer().scheduleAtFixedRate(0L, 30_000L) {
+    Timer().scheduleAtFixedRate(0L, Duration.ofMinutes(POLL_INTERVAL_MINUTES).toMillis()) {
         try {
             val dataString = client.newCall(dataRequest).execute().body!!.string()
             val data = dataString.lines()
