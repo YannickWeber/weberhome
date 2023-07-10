@@ -1,0 +1,11 @@
+[Unit]
+Description=Mitterweg 7 Website
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 -m http.server 8000
+WorkingDirectory=/home/yannick/Mitterweg7Website
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
