@@ -34,7 +34,7 @@ fun main() {
 \/    \/_|\__|\__\___|_|    \_/\_/ \___|\__, |  /_/   
                                         |___/                  
 
-Varta Batterie to InfluxDB version 0.3.0
+Varta Batterie to InfluxDB version 0.4.0
 ---
     """.trimIndent()
     )
@@ -63,7 +63,7 @@ Varta Batterie to InfluxDB version 0.3.0
             it.isNotBlank()
         }
         .filter {
-            it.startsWith("WR_Conf") || it.startsWith("EMeter_Conf")
+            it.startsWith("WR_Conf")
         }
         .associate {
             val split = it.split(" = ")
@@ -78,8 +78,11 @@ Varta Batterie to InfluxDB version 0.3.0
 
     Timer().scheduleAtFixedRate(0L, Duration.ofMinutes(POLL_INTERVAL_MINUTES).toMillis()) {
         try {
-            readAndWriteHttpData(client, dataRequest, rowNames, influxDBClient)
-            readAndWriteModbusData(master, influxDBClient)
+            val point = Point.measurement("mitterweg7")
+                .time(Instant.now().toEpochMilli(), WritePrecision.MS)
+            readAndWriteHttpData(client, dataRequest, rowNames, point)
+            readAndWriteModbusData(master, point)
+            influxDBClient.writeApiBlocking.writePoint(point)
         } catch (e: Exception) {
             Logger.warn(e, "Exception while writing data to InfluxDB: ")
         }
@@ -88,26 +91,22 @@ Varta Batterie to InfluxDB version 0.3.0
 
 private fun readAndWriteModbusData(
     master: ModbusTCPMaster,
-    influxDBClient: InfluxDBClient
+    point: Point
 ) {
-    val modbusPoint: Point = Point.measurement("modbus")
-        .time(Instant.now().toEpochMilli(), WritePrecision.MS)
     val resp1 = master.readMultipleRegisters(1066, 1).map {
         it.value.toShort()
     }.first()
-    modbusPoint.addField("active_power", resp1)
+    point.addField("active_power", resp1)
 
     val resp2 = master.readMultipleRegisters(1078, 1).map {
         it.value.toShort()
     }.first()
-    modbusPoint.addField("grid_power", resp2)
+    point.addField("grid_power", resp2)
 
     val resp3 = master.readMultipleRegisters(1068, 1).map {
         it.value
     }.first()
-    modbusPoint.addField("SOC", resp3)
-    influxDBClient.writeApiBlocking.writePoint(modbusPoint)
-
+    point.addField("SOC", resp3)
     Logger.info("Wrote Modbus data to InfluxDB")
 }
 
@@ -115,7 +114,7 @@ private fun readAndWriteHttpData(
     client: OkHttpClient,
     dataRequest: Request,
     rowNames: Map<String, List<String>>,
-    influxDBClient: InfluxDBClient
+    point: Point
 ) {
     val dataString = client.newCall(dataRequest).execute().body!!.string()
     val data = dataString.lines()
@@ -135,14 +134,11 @@ private fun readAndWriteHttpData(
                 .split(",")
             split[0].replace("_Data", "") to names
         }
-
-    val wrPoint: Point = Point.measurement("WR")
-        .time(Instant.now().toEpochMilli(), WritePrecision.MS)
     val wechselRichterRowNames = rowNames["WR"]!!
     val wechselRichterData = data["WR"]!!
-    wechselRichterRowNames.zip(wechselRichterData).forEach {
-        wrPoint.addField(it.first, it.second.toLongOrDefault(-1L))
-    }
-    influxDBClient.writeApiBlocking.writePoint(wrPoint)
+    val pmb = wechselRichterRowNames.zip(wechselRichterData).first {
+        it.first == "PMB"
+    }.first.toLongOrDefault(0)
+    point.addField("PMB", pmb)
     Logger.info("Wrote WR data to InfluxDB")
 }
