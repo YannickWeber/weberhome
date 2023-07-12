@@ -22,6 +22,23 @@ private const val INFLUX_DB_ORG = "my-org"
 private const val INFLUX_DB_BUCKET = "weber"
 
 fun main() {
+
+    println(
+        """
+---
+        _ _   _                                 _____ 
+  /\/\ (_) |_| |_ ___ _ ____      _____  __ _  |___  |
+ /    \| | __| __/ _ \ '__\ \ /\ / / _ \/ _` |    / / 
+/ /\/\ \ | |_| ||  __/ |   \ V  V /  __/ (_| |   / /  
+\/    \/_|\__|\__\___|_|    \_/\_/ \___|\__, |  /_/   
+                                        |___/                  
+
+Varta Batterie to InfluxDB version 0.2.0
+---
+    """.trimIndent()
+    )
+
+
     val token = INFLUX_DB_TOKEN.toCharArray()
     val org = INFLUX_DB_ORG
     val bucket = INFLUX_DB_BUCKET
@@ -95,9 +112,9 @@ fun main() {
                 eMeterPoint.addField(it.first, it.second.toLongOrDefault(-1L))
             }
             influxDBClient.writeApiBlocking.writePoint(eMeterPoint)
-            Logger.info("Wrote WR data to InfluxDB")
+            Logger.info("Wrote EMeter data to InfluxDB")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Logger.warn(e, "Exception while writing data to InfluxDB: ")
         }
     }
 }
