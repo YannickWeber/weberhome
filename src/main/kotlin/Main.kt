@@ -34,7 +34,7 @@ fun main() {
 \/    \/_|\__|\__\___|_|    \_/\_/ \___|\__, |  /_/   
                                         |___/                  
 
-Varta Batterie to InfluxDB version 0.4.0
+Varta Batterie to InfluxDB version 0.4.1
 ---
     """.trimIndent()
     )
@@ -138,7 +138,7 @@ private fun readAndWriteHttpData(
     val wechselRichterData = data["WR"]!!
     val pmb = wechselRichterRowNames.zip(wechselRichterData).first {
         it.first == "PMB"
-    }.first.toLongOrDefault(0)
+    }.second.toLongOrDefault(-1)
     point.addField("PMB", pmb)
     Logger.info("Wrote WR data to InfluxDB")
 }
