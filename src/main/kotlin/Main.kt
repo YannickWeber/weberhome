@@ -31,7 +31,7 @@ fun main() {
 \/    \/_|\__|\__\___|_|    \_/\_/ \___|\__, |  /_/   
                                         |___/                  
 
-Varta Batterie to InfluxDB version 0.5.0
+Varta Batterie to InfluxDB version 0.5.1
 ---
     """.trimIndent()
     )
@@ -51,16 +51,8 @@ Varta Batterie to InfluxDB version 0.5.0
         try {
             val point = Point.measurement("mitterweg7")
                 .time(Instant.now().toEpochMilli(), WritePrecision.MS)
-            try {
-                readAndWriteHttpData(client, point)
-            } catch (e: Exception) {
-                Logger.warn(e, "Exception while fetching HTTP data: ")
-            }
-            try {
-                readAndWriteModbusData(master, point)
-            } catch (e: Exception) {
-                Logger.warn(e, "Exception while fetching modbus data: ")
-            }
+            readAndWriteHttpData(client, point)
+            readAndWriteModbusData(master, point)
             influxDBClient.writeApiBlocking.writePoint(point)
         } catch (e: Exception) {
             Logger.warn(e, "Exception while writing data to InfluxDB: ")
@@ -71,7 +63,7 @@ Varta Batterie to InfluxDB version 0.5.0
 private fun readAndWriteModbusData(
     master: ModbusTCPMaster,
     point: Point
-) {
+) = try {
     val resp1 = master.readMultipleRegisters(1066, 1).map {
         it.value.toShort()
     }.first()
@@ -87,12 +79,17 @@ private fun readAndWriteModbusData(
     }.first()
     point.addField("SOC", resp3)
     Logger.info("Wrote Modbus data to InfluxDB")
+} catch (e: Exception) {
+    Logger.warn(e, "Exception while fetching Modbus data: ")
+    point.addField("active_power", 0)
+    point.addField("grid_power", 0)
+    point.addField("SOC", 0)
 }
 
 private fun readAndWriteHttpData(
     client: OkHttpClient,
     point: Point
-) {
+) = try {
     val request = Request.Builder().url(FRONIUS_API_URL).build()
     val body = client.newCall(request).execute().body!!
     val p = JsonParser.parseString(body.string())
@@ -104,4 +101,7 @@ private fun readAndWriteHttpData(
         .asInt
     point.addField("PMB", p)
     Logger.info("Wrote HTTP data to InfluxDB")
+} catch (e: Exception) {
+    Logger.warn(e, "Exception while fetching HTTP data: ")
+    point.addField("PMB", 0)
 }
