@@ -7,7 +7,7 @@ SuccessExitStatus=143
 User=yannick
 Type=simple
 
-ExecStart=/bin/bash /home/yannick/Solar/weberhome-1.0-SNAPSHOT/bin/weberhome
+ExecStart=/bin/bash /home/yannick/mitterweg7/weberhome-1.0-SNAPSHOT/bin/weberhome
 ExecStop=/bin/kill -15 $MAINPID
 
 [Install]

@@ -14,10 +14,12 @@ import kotlin.concurrent.scheduleAtFixedRate
 private const val POLL_INTERVAL_MINUTES = 2L
 private const val FRONIUS_API_URL = "http://fronius-wechselrichter/solar_api/v1/GetPowerFlowRealtimeData.fcgi"
 
-private const val INFLUX_DB_URL = "http://raspberrypi:8086"
+private const val INFLUX_DB_URL = "http://mitterweg7:8086"
 private const val INFLUX_DB_TOKEN = "my-token"
 private const val INFLUX_DB_ORG = "my-org"
-private const val INFLUX_DB_BUCKET = "weber"
+private const val INFLUX_DB_BUCKET = "mitterweg7"
+
+private const val VARTA_BATTERIE = "varta-batterie"
 
 fun main() {
 
@@ -41,7 +43,7 @@ Varta Batterie to InfluxDB version 0.5.1
     val bucket = INFLUX_DB_BUCKET
     val influxDBClient: InfluxDBClient = InfluxDBClientFactory.create(INFLUX_DB_URL, token, org, bucket)
 
-    val master = ModbusTCPMaster("varta-batterie", 502)
+    val master = ModbusTCPMaster(VARTA_BATTERIE, 502)
     master.connect()
 
     val client = OkHttpClient.Builder()
@@ -51,8 +53,8 @@ Varta Batterie to InfluxDB version 0.5.1
         try {
             val point = Point.measurement("mitterweg7")
                 .time(Instant.now().toEpochMilli(), WritePrecision.MS)
-            readAndWriteHttpData(client, point)
-            readAndWriteModbusData(master, point)
+            readInverterData(client, point)
+            readBatteryData(master, point)
             influxDBClient.writeApiBlocking.writePoint(point)
         } catch (e: Exception) {
             Logger.warn(e, "Exception while writing data to InfluxDB: ")
@@ -60,7 +62,7 @@ Varta Batterie to InfluxDB version 0.5.1
     }
 }
 
-private fun readAndWriteModbusData(
+private fun readBatteryData(
     master: ModbusTCPMaster,
     point: Point
 ) = try {
@@ -86,7 +88,7 @@ private fun readAndWriteModbusData(
     point.addField("SOC", 0)
 }
 
-private fun readAndWriteHttpData(
+private fun readInverterData(
     client: OkHttpClient,
     point: Point
 ) = try {
