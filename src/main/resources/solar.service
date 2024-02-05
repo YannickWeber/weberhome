@@ -10,5 +10,8 @@ Type=simple
 ExecStart=/bin/bash /home/yannick/mitterweg7/weberhome-1.0-SNAPSHOT/bin/weberhome
 ExecStop=/bin/kill -15 $MAINPID
 
+Restart=always
+RestartSec=60s
+
 [Install]
 WantedBy=multi-user.target
