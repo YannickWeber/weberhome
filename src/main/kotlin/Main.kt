@@ -13,6 +13,7 @@ import kotlin.concurrent.scheduleAtFixedRate
 
 private const val POLL_INTERVAL_MINUTES = 2L
 private const val FRONIUS_API_URL = "http://fronius-wechselrichter/solar_api/v1/GetPowerFlowRealtimeData.fcgi"
+private const val WALLBOX_POWER_DRAW_URL = "http://192.168.178.162/meter/values"
 
 private const val INFLUX_DB_URL = "http://mitterweg7:8086"
 private const val INFLUX_DB_TOKEN = "my-token"
@@ -33,7 +34,7 @@ fun main() {
 \/    \/_|\__|\__\___|_|    \_/\_/ \___|\__, |  /_/   
                                         |___/                  
 
-Varta Batterie to InfluxDB version 0.5.1
+Varta Batterie to InfluxDB version 0.6.0
 ---
     """.trimIndent()
     )
@@ -55,6 +56,7 @@ Varta Batterie to InfluxDB version 0.5.1
                 .time(Instant.now().toEpochMilli(), WritePrecision.MS)
             readInverterData(client, point)
             readBatteryData(master, point)
+            readWallboxData(client, point)
             influxDBClient.writeApiBlocking.writePoint(point)
         } catch (e: Exception) {
             Logger.warn(e, "Exception while writing data to InfluxDB: ")
@@ -80,7 +82,7 @@ private fun readBatteryData(
         it.value
     }.first()
     point.addField("SOC", resp3)
-    Logger.info("Wrote Modbus data to InfluxDB")
+    Logger.info("Wrote Battery data to InfluxDB")
 } catch (e: Exception) {
     Logger.warn(e, "Exception while fetching Modbus data: ")
     point.addField("active_power", 0)
@@ -102,8 +104,24 @@ private fun readInverterData(
         .asJsonObject.get("P")
         .asInt
     point.addField("PMB", p)
-    Logger.info("Wrote HTTP data to InfluxDB")
+    Logger.info("Wrote Inverter data to InfluxDB")
 } catch (e: Exception) {
     Logger.warn(e, "Exception while fetching HTTP data: ")
     point.addField("PMB", 0)
+}
+
+private fun readWallboxData(
+    client: OkHttpClient,
+    point: Point
+) = try {
+    val request = Request.Builder().url(WALLBOX_POWER_DRAW_URL).build()
+    val body = client.newCall(request).execute().body!!
+    val p = JsonParser.parseString(body.string())
+        .asJsonObject.get("power")
+        .asInt
+    point.addField("wallbox_power", p)
+    Logger.info("Wrote Wallbox data to InfluxDB")
+} catch (e: Exception) {
+    Logger.warn(e, "Exception while fetching HTTP data from Wallbox: ")
+    point.addField("wallbox_power", 0)
 }
