@@ -13,7 +13,7 @@ import kotlin.concurrent.scheduleAtFixedRate
 
 private const val POLL_INTERVAL_MINUTES = 2L
 private const val FRONIUS_API_URL = "http://fronius-wechselrichter/solar_api/v1/GetPowerFlowRealtimeData.fcgi"
-private const val WALLBOX_POWER_DRAW_URL = "http://192.168.178.162/meter/values"
+private const val WALLBOX_POWER_DRAW_URL = "http://warp2-296n/meter/values"
 
 private const val INFLUX_DB_URL = "http://mitterweg7:8086"
 private const val INFLUX_DB_TOKEN = "my-token"
