@@ -1,0 +1,2 @@
+scp /Users/yannick/IdeaProjects/weberhome/charging/build/distributions/charging-1.0-SNAPSHOT.zip yannick@mitterweg7:/home/yannick/mitterweg7
+scp /Users/yannick/IdeaProjects/weberhome/solarMetrics/build/distributions/solarMetrics-1.0-SNAPSHOT.zip yannick@mitterweg7:/home/yannick/mitterweg7
