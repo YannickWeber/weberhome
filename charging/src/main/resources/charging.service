@@ -1,0 +1,17 @@
+[Unit]
+Description=Solar to InfluxDB Service
+After=syslog.target network.target
+
+[Service]
+SuccessExitStatus=143
+User=yannick
+Type=simple
+
+ExecStart=/bin/bash /home/yannick/mitterweg7/charging-1.0-SNAPSHOT/bin/charging
+ExecStop=/bin/kill -15 $MAINPID
+
+Restart=always
+RestartSec=60s
+
+[Install]
+WantedBy=multi-user.target

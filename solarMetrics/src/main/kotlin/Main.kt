@@ -34,7 +34,7 @@ fun main() {
 \/    \/_|\__|\__\___|_|    \_/\_/ \___|\__, |  /_/   
                                         |___/                  
 
-Varta Batterie to InfluxDB version 0.6.0
+Solar Metrics to InfluxDB version 0.7.0
 ---
     """.trimIndent()
     )
